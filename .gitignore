@@ -17,3 +17,7 @@ data/*
 
 # test scripts
 scripts/SC_analysis_ignore.R
+scripts/mhc_expression.R
+
+# incomplete scripts
+scripts/SC_analysis.R
