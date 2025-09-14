@@ -3,8 +3,8 @@ HLA expression on scRNA-seq data
 Onur Özer
 2025-09-08
 
-There is a well-known text book knowledge: HLA-classI genes are
-expressed in all cells containing nucleus, while HLA-classII genes are
+There is a well-known text book knowledge: HLA class-I genes are
+expressed in all cells containing nucleus, while HLA class-II genes are
 mainly expressed in antigen-presenting cells (APCs).
 
 Now that we have many available single-cell RNA sequencing data, we can
@@ -18,6 +18,7 @@ library(tidyverse)
 library(patchwork)
 library(SeuratData)
 library(harmony)
+library(Matrix)
 ```
 
 Now we will install some interesting scRNA-seq datasets from the
@@ -54,13 +55,20 @@ mononuclear cells.
 head(pbmc3k@meta.data)
 ```
 
-    ##                orig.ident nCount_RNA nFeature_RNA seurat_annotations
-    ## AAACATACAACCAC     pbmc3k       2419          779       Memory CD4 T
-    ## AAACATTGAGCTAC     pbmc3k       4903         1352                  B
-    ## AAACATTGATCAGC     pbmc3k       3147         1129       Memory CD4 T
-    ## AAACCGTGCTTCCG     pbmc3k       2639          960         CD14+ Mono
-    ## AAACCGTGTATGCG     pbmc3k        980          521                 NK
-    ## AAACGCACTGGTAC     pbmc3k       2163          781       Memory CD4 T
+    ##                orig.ident nCount_RNA nFeature_RNA seurat_annotations RNA_snn_res.1
+    ## AAACATACAACCAC     pbmc3k       2419          779       Memory CD4 T             0
+    ## AAACATTGAGCTAC     pbmc3k       4903         1352                  B             2
+    ## AAACATTGATCAGC     pbmc3k       3147         1129       Memory CD4 T             1
+    ## AAACCGTGCTTCCG     pbmc3k       2639          960         CD14+ Mono             7
+    ## AAACCGTGTATGCG     pbmc3k        980          521                 NK             6
+    ## AAACGCACTGGTAC     pbmc3k       2163          781       Memory CD4 T             1
+    ##                seurat_clusters
+    ## AAACATACAACCAC               0
+    ## AAACATTGAGCTAC               2
+    ## AAACATTGATCAGC               1
+    ## AAACCGTGCTTCCG               7
+    ## AAACCGTGTATGCG               6
+    ## AAACGCACTGGTAC               1
 
 Above, as rownames we have cell barcodes. Columns give us the dataset,
 the number of RNA reads (nCount_RNA) and the number of features
@@ -99,7 +107,7 @@ p2 <- DimPlot(pbmc3k_dataset, reduction = "tsne", label = TRUE, group.by = "seur
 p1+p2
 ```
 
-<img src="HLA_expression_files/figure-gfm/unnamed-chunk-6-1.png" width="100%" />
+<img src="README_files/figure-gfm/unnamed-chunk-6-1.png" width="100%" />
 
 We have both APCs and other cell types so we can look at how HLA gene
 expression differs between these.
@@ -116,9 +124,9 @@ pbmc3k_dataset$seurat_annotations <- factor(pbmc3k_dataset$seurat_annotations,
 DotPlot(pbmc3k_dataset, features = c(hla_genes),  group.by = "seurat_annotations") + RotatedAxis()
 ```
 
-![](HLA_expression_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-7-1.png)<!-- -->
 
-Right away, we can see the pattern for HLA-classII genes. APCs robustly
+Right away, we can see the pattern for HLA class-II genes. APCs robustly
 express them but expression in other cell types is sporadic. So we can
 confirm our beloved Janeway’s Immunobiology was not lying to us.
 
@@ -128,7 +136,7 @@ B cells. There are examples from the literature confirming low
 expression of DQ in monocytes.
 
 Another interesting observation is the slightly higher expression of HLA
-classII genes in CD8+ T cells. This may suggest that some these cells
+class-II genes in CD8+ T cells. This may suggest that some these cells
 were closer to an activated state.
 
 Nice, let’s try another dataset `pbmcsca`. We do the same processing.
@@ -146,7 +154,7 @@ pbmcsca_dataset <- pbmcsca_dataset %>%
 DimPlot(pbmcsca_dataset, reduction = "umap", label = TRUE, group.by = "CellType", label.size = 3)
 ```
 
-![](HLA_expression_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-8-1.png)<!-- -->
 
 That looks weird. It looks like the same cell types are all over the
 UMAP with no apparent clustering. Let’s check the metadata to see what’s
@@ -162,9 +170,9 @@ unique(pbmcsca@meta.data$Experiment)
 unique(pbmcsca@meta.data$Method)
 ```
 
-    ## [1] "Smart-seq2"          "CEL-Seq2"            "10x Chromium (v2) A"
-    ## [4] "10x Chromium (v2) B" "10x Chromium (v3)"   "Drop-seq"           
-    ## [7] "Seq-Well"            "inDrops"             "10x Chromium (v2)"
+    ## [1] "Smart-seq2"          "CEL-Seq2"            "10x Chromium (v2) A" "10x Chromium (v2) B"
+    ## [5] "10x Chromium (v3)"   "Drop-seq"            "Seq-Well"            "inDrops"            
+    ## [9] "10x Chromium (v2)"
 
 As we can see, `pbmcsca` dataset contains multiple experiments ran on
 different scRNAseq technologies. This means, the different clusters we
@@ -176,7 +184,7 @@ experiment or method.
 DimPlot(pbmcsca_dataset, reduction = "umap", label = TRUE, group.by = c('Experiment',"Method"), label.size = 3)
 ```
 
-<img src="HLA_expression_files/figure-gfm/unnamed-chunk-10-1.png" width="100%" />
+<img src="README_files/figure-gfm/unnamed-chunk-10-1.png" width="100%" />
 
 It is clear that the clustering is mainly driven by these two
 categories, rather than the cell type as we expect. One straightforward
@@ -200,7 +208,7 @@ pbmcsca_dataset <- pbmcsca_dataset %>%
 DimPlot(pbmcsca_dataset, reduction = "umap", label = TRUE, group.by = "CellType", label.size = 3)
 ```
 
-![](HLA_expression_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-11-1.png)<!-- -->
 
 That looks better. Now, for our purpose, which is looking at the
 expression of HLA genes, we actually do not need this. Again,
@@ -222,10 +230,10 @@ pbmcsca_dataset$CellType <- factor(pbmcsca_dataset$CellType,
 DotPlot(pbmcsca_dataset, features = hla_genes, group.by = "CellType") + RotatedAxis()
 ```
 
-![](HLA_expression_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-12-1.png)<!-- -->
 
 Very similar to the plot from the `pbmc3k`, we again see the difference
-in HLA-classII expression and low expression of HLA-DQ in some APCs.
+in HLA class-II expression and low expression of HLA-DQ in some APCs.
 
 Let’s spice it up a bit. We will look at the `ifnb` dataset which is
 also PBMCs but one group is treated with interferon beta, while the
@@ -255,7 +263,7 @@ p4 <- DimPlot(ifnb_dataset, reduction = "UMAPharmony", label = FALSE, group.by =
 (p1 + p2) / (p3 + p4)
 ```
 
-<img src="HLA_expression_files/figure-gfm/unnamed-chunk-13-1.png" width="100%" />
+<img src="README_files/figure-gfm/unnamed-chunk-13-1.png" width="100%" />
 
 Similar to the `pbmcsca` dataset, we have more than one conditions here.
 Does that mean we need to control for batch effects?
@@ -292,21 +300,22 @@ ifnb_dataset$seurat_annotations <- factor(ifnb_dataset$seurat_annotations,
                                                       "CD16 Mono","CD14 Mono","DC","pDC", "B", "B Activated")))
 
 DotPlot(ifnb_dataset, features = hla_genes, group.by = "seurat_annotations", scale = TRUE) + 
-  RotatedAxis()+ggtitle("MHC gene expression by cell type (complete dataset)")
+  RotatedAxis()+ggtitle("HLA gene expression by cell type (complete dataset)")
 ```
 
-<img src="HLA_expression_files/figure-gfm/unnamed-chunk-14-1.png" width="100%" />
+<img src="README_files/figure-gfm/unnamed-chunk-14-1.png" width="100%" />
 
-Nothing out of place. Constitutive expression of HLA classI in all cells
-and expression of HLA classII in APCs. But this is the combined dataset.
-We can look at it again, separated based on the IFN-B stimulation.
+Nothing out of place. Constitutive expression of HLA class-I in all
+cells and expression of HLA class-II in APCs. But this is the combined
+dataset. We can look at it again, separated based on the IFN-B
+stimulation.
 
 ``` r
 DotPlot(ifnb_dataset, features = hla_genes, group.by = "seurat_annotations", split.by = "stim",scale = TRUE) + 
-  RotatedAxis()+ggtitle("MHC gene expression by cell type (CTRL vs IFN-B stimulated)")
+  RotatedAxis()+ggtitle("HLA gene expression by cell type (CTRL vs IFN-B stimulated)")
 ```
 
-<img src="HLA_expression_files/figure-gfm/unnamed-chunk-15-1.png" width="100%" />
+<img src="README_files/figure-gfm/unnamed-chunk-15-1.png" width="100%" />
 
 Well, I don’t know what you think but when I saw the above plot for the
 first time, I said “WHOAA!”. It looks as if IFN-B stimulation immensely
@@ -326,21 +335,21 @@ We can make this possible by providing a continuous color scale to the
 ``` r
 DotPlot(ifnb_dataset, features = c(hla1,hla2), group.by = "seurat_annotations", 
               split.by = "stim",scale = TRUE,cols = 'RdGy') + 
-  RotatedAxis()+ggtitle("MHC genes by cell type (CTRL vs IFN-B)")
+  RotatedAxis()+ggtitle("HLA genes by cell type (CTRL vs IFN-B)")
 ```
 
-<img src="HLA_expression_files/figure-gfm/unnamed-chunk-16-1.png" width="100%" />
+<img src="README_files/figure-gfm/unnamed-chunk-16-1.png" width="100%" />
 
 Now the color of circles are comparable to each other.
 
 If you look carefully, an interesting pattern appears. For almost every
-cell type, IFN-B stimulation increases the expression of HLA-classI
+cell type, IFN-B stimulation increases the expression of HLA class-I
 molecules. This is a well-known effect of type-I interferons which
-include IFN-B as potent antiviral molecules. High expression of
-HLA-classI increases the peptide presentation on infected cells, hence
+include IFN-B as potent antiviral molecules. High expression of HLA
+class-I increases the peptide presentation on infected cells, hence
 increasing the chance of cytotoxic T-cell activation.
 
-IFN-B’s effect on HLA-classII molecules appears more subtle. In fact,
+IFN-B’s effect on HLA class-II molecules appears more subtle. In fact,
 some of the APCs appear to have slightly decreased expression after
 stimulation. We can look at it in different ways.
 
@@ -375,9 +384,9 @@ ggplot(mono.de, aes(x = avg_log2FC, y = -log10(p_val_adj))) +
        x = "log2FC (STIM/CTRL)", y = "-log10(adj p)")
 ```
 
-![](HLA_expression_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-17-1.png)<!-- -->
 
-We can confirm the dotplot that in B cells HLA-classI genes are
+We can confirm the dotplot that in B cells HLA class-I genes are
 upregulated after IFN-B treatment and HLA-DQ seems downregulated. Let’s
 calculate log2FC values for all cell types and make a heatmap to get a
 better overview.
@@ -404,7 +413,7 @@ for (cell_type in cell_types) {
   de_genes$cell_type <- cell_type
   de_genes$gene <- rownames(de_genes)
   de_results_list[[cell_type]] <- de_genes
-  }
+}
 
 combined_de_results <- bind_rows(de_results_list)
 rownames(combined_de_results) <- NULL
@@ -418,8 +427,312 @@ ggplot(combined_de_results, aes(x = gene, y = cell_type, fill = avg_log2FC)) +
        title = "Differential Expression of HLA Genes after IFN-B Stimulation")
 ```
 
-![](HLA_expression_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
+![](README_files/figure-gfm/unnamed-chunk-18-1.png)<!-- -->
 
 Now the difference between class1 and class2 genes is more clear and the
 upregulating effect of IFN-B on class1 across most cell types stands
 out, whereas class2 changes are more subtle and cell-type specific.
+
+Let’s try one final analysis to see the opposite effect. Interferon
+gamma (IFN-G) is a potent upregulator of HLA class-II. I found the
+following dataset that applied and IFN-G stimulation to PBMCs. GEO
+accession: GSE178429, DOI: <https://doi.org/10.1016/j.xgen.2022.100166>
+
+This time we need to download the dataset and prepare it as a Seurat
+object.
+
+``` r
+# prepare the seurat data. change the paths if necessary
+mtx_path  <- "data/ifng_data/GSE178429_PBMCs_stim_scRNAseq_counts.txt.gz"
+gene_path <- "data/ifng_data/GSE178429_PBMCs_stim_scRNAseq_geneNames.txt.gz"
+metadata_path <- "data/ifng_data/GSE178429_PBMCs_stim_scRNAseq_cellMeta.txt.gz"
+
+mtx <- readMM(gzfile(mtx_path))
+genes <- read.table(gene_path)[[1]]
+meta <- read.table(metadata_path,header = TRUE,row.names = 1)
+
+# get cell IDs
+cell_names <- meta$cellBarcode
+
+# assign cell (columns) and gene (rows) names in the matrix
+# as a sanity check, these should return TRUE: ncol(mtx)==length(cell_names) and nrows(mtx)==length(genes)
+
+colnames(mtx) <- cell_names
+rownames(mtx) <- genes
+
+# build seurat object
+ifng_dataset <- CreateSeuratObject(mtx, project = "IFNG")
+ifng_dataset <- AddMetaData(ifng_dataset, metadata = meta)
+#ifng_dataset_raw <- ifng_dataset # in case we need the original dataset later
+
+
+# ensure that default assay is RNA
+DefaultAssay(ifng_dataset) <- "RNA"
+
+# here are conditions in the dataset
+unique(ifng_dataset@meta.data$Condition)
+```
+
+    ##  [1] "Control_1h"          "Control_6h"          "ControlGolgiPlug_6h" "IFN_1h"             
+    ##  [5] "IFN_6h"              "IFNGolgiPlug_6h"     "LPS_1h"              "LPS_6h"             
+    ##  [9] "LPSGolgiPlug_6h"     "PMA_1h"              "PMA_6h"              "PMAGolgiPlug_6h"
+
+``` r
+# and the data comes from different donors
+unique(ifng_dataset@meta.data$Donor)
+```
+
+    ## [1] "Donor1" "Donor2" "Donor3" "Donor4"
+
+``` r
+table(ifng_dataset@meta.data$Condition,ifng_dataset@meta.data$Donor)
+```
+
+    ##                      
+    ##                       Donor1 Donor2 Donor3 Donor4
+    ##   Control_1h             689    704    888   1227
+    ##   Control_6h             540    584    639    531
+    ##   ControlGolgiPlug_6h    360    509    320      0
+    ##   IFN_1h                 425    480    457      0
+    ##   IFN_6h                 385    344    367      0
+    ##   IFNGolgiPlug_6h        258    353    411      0
+    ##   LPS_1h                 648    748    927    138
+    ##   LPS_6h                 611    697    884    755
+    ##   LPSGolgiPlug_6h        655    374    190      0
+    ##   PMA_1h                 624    786    692    698
+    ##   PMA_6h                 654    688    823    635
+    ##   PMAGolgiPlug_6h        302    360    394      0
+
+``` r
+# some quality control
+# check the distribution of nCount_RNA and nFeature_RNA
+VlnPlot(ifng_dataset, features = c("nFeature_RNA", "nCount_RNA"), ncol = 2)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-19-1.png)<!-- -->
+
+``` r
+ggplot(ifng_dataset@meta.data, aes(x = nFeature_RNA)) +
+  geom_histogram(bins = 100, fill = "steelblue", color = "white", alpha = 0.8) +
+  geom_vline(xintercept = 200, linetype = 2) + # this shows where your cut off value lands. change this to see how much of the cells discarded
+  labs(title = "Distribution of Genes Detected per Cell",
+       x = "Number of Genes",
+       y = "Number of Cells") +
+  theme_minimal() +
+  theme(plot.title = element_text(hjust = 0.5))
+```
+
+![](README_files/figure-gfm/unnamed-chunk-19-2.png)<!-- -->
+
+``` r
+# filter cells, 200 and 5000 are threshold from the paper
+ifng_dataset <- subset(ifng_dataset,subset = nFeature_RNA > 200 & nFeature_RNA < 3000)
+
+
+# subset to controls and IFNG treatment. We are not interested in the other conditions for now
+ifng_dataset <- subset(ifng_dataset,subset = Condition %in% c("Control_1h","Control_6h","IFN_1h","IFN_6h" ))
+
+# we will switch to the SCTransform method as it works better for the label transfer that we later use
+ifng_dataset <- ifng_dataset %>%
+  SCTransform(verbose = FALSE)%>%
+  RunPCA(npcs = 50,verbose = FALSE) %>%
+  RunUMAP(reduction = "pca", dims = 1:50)
+
+DimPlot(ifng_dataset, reduction = "umap", label = TRUE, group.by = "Condition", label.size = 3)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-19-3.png)<!-- -->
+
+``` r
+DimPlot(ifng_dataset, reduction = "umap", label = TRUE, group.by = "Donor", label.size = 3)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-19-4.png)<!-- -->
+
+That looks pretty similar to a typical PBMC dataset with a three groups
+(Bs; T and NKs; Mono and DCs) There is some clustering based on the
+condition, which is expected but this does not seem to disrupt the
+clustering based on cell type. Also no obvious clustering based on the
+donor, which is a good sign.
+
+Now, unlike the other datasets, we do not have have an annotation here.
+In other words, we don’t know which cell type each cell is. So the next
+step is to annotate cells so that we can investigate differences between
+cell types.
+
+There are several methods for annotation. As I mentioned above, the
+typical way is to generate cell clusters and using well-known markers,
+identify cell type for each cluster. This is the approach taken in the
+paper. By calculating average expression of marker genes in clusters,
+they identified cell types associated with those markers. There are
+several databases and tools (PangloDB, scCATCH, Azimuth etc.) where we
+can find a list of markers for cell types or even directly annotate
+using their curated references. Our approach is a bit different because
+instead of using a set of markers, we will rely on a reference PBMC
+dataset that already has annotations and try the transfer labels. We
+already have the `pbmc3k` dataset in our hand and it is a good enough
+start.
+
+We will repeat the normalization step with `SCTransform` for `pbmc3k`
+because it is important that both the reference and the query (i.e. the
+dataset to be annotated) is normalized in the same way.
+
+``` r
+# normalize the reference dataset
+pbmc_ref <- pbmc3k %>%
+  SCTransform(verbose = FALSE) %>%
+  RunPCA(npcs = 50)
+
+ifng_dataset <- ifng_dataset
+
+# find ancors and transfer
+anchors <- FindTransferAnchors(
+  reference = pbmc_ref,
+  query     = ifng_dataset,
+  normalization.method = "SCT",
+  dims = 1:30)
+
+pred_sct <- TransferData(
+  anchors = anchors,
+  refdata = pbmc_ref$seurat_annotations,
+  dims    = 1:30)
+
+ifng_dataset <- AddMetaData(ifng_dataset, pred_sct)
+ifng_dataset$annot <- ifelse(ifng_dataset$prediction.score.max >= 0.6, as.character(ifng_dataset$predicted.id), "Unknown")
+Idents(ifng_dataset) <- "annot"
+table(ifng_dataset$annot)
+```
+
+    ## 
+    ##            B   CD14+ Mono        CD8 T           DC FCGR3A+ Mono Memory CD4 T  Naive CD4 T 
+    ##          520         1079          535          138          259         3135          392 
+    ##           NK     Platelet      Unknown 
+    ##          489           13         1690
+
+Now we have labels for our cell types, we can do some quick sanity
+checks. First, let’s see the distribution of prediction scores for each
+cell type.
+
+``` r
+VlnPlot(ifng_dataset, "prediction.score.max", group.by = "annot", pt.size = 0)
+```
+
+![](README_files/figure-gfm/unnamed-chunk-21-1.png)<!-- --> Overall, it
+looks good. T/NK cell group seems to have lower score than other groups
+but this is something we can live with for the moment.
+
+How about HLA genes?
+
+``` r
+DotPlot(ifng_dataset, features = hla_genes,  group.by = "predicted.id") + RotatedAxis()
+```
+
+![](README_files/figure-gfm/unnamed-chunk-22-1.png)<!-- -->
+
+Nice to see the typical expression profile. We can now look at the
+difference between the controls and the IFN-treated cells.
+
+``` r
+p1 <- DotPlot(subset(ifng_dataset,subset = Condition %in% c("Control_1h","IFN_1h")), features = hla_genes, group.by = "predicted.id", 
+        split.by = "Condition",scale = TRUE,cols = 'RdGy') + 
+  RotatedAxis()+ggtitle("HLA genes 1h (CTRL vs IFN-G)")
+
+p2 <- DotPlot(subset(ifng_dataset,subset = Condition %in% c("Control_6h","IFN_6h")), features = hla_genes, group.by = "predicted.id", 
+               split.by = "Condition",scale = TRUE,cols = 'RdGy') + 
+          RotatedAxis()+ggtitle("HLA genes 6h (CTRL vs IFN-G)")
+
+p1 / p2
+```
+
+<img src="README_files/figure-gfm/unnamed-chunk-23-1.png" width="100%" />
+
+There is no striking difference visible in this plot but for some cell
+types such as B, we can see the increase in the expression of class-II
+genes. We can make a heatmap to investigate this further.
+
+``` r
+# remove platelet and unknown, reorder
+ifng_dataset <- subset(ifng_dataset,subset = predicted.id != 'Unknown'& predicted.id != 'Platelet')
+ifng_dataset$predicted.id <- factor(ifng_dataset$predicted.id,
+                                    levels = rev(c("Memory CD4 T","Naive CD4 T","CD8 T","NK","CD14+ Mono","FCGR3A+ Mono","DC","B")))
+
+
+cell_types <- unique(ifng_dataset$predicted.id)
+de_results_list <- list()
+
+for (cell_type in cell_types) {
+  # first, we will subset the dataset based on the cell type. So out Idents should be annotations without the treatment information
+  subset_seu <- ifng_dataset
+  Idents(subset_seu) <- subset_seu$predicted.id
+  subset_seu <- subset(subset_seu, idents = cell_type)
+  # now we switch back to treatment information and run the DE analysis
+  Idents(subset_seu) <- 'Condition'
+  
+  
+  de_genes_1h <- FindMarkers(subset_seu,
+                          ident.1 = "IFN_1h",
+                          ident.2 = "Control_1h",
+                          features = hla_genes,
+                          test.use = "MAST",
+                          logfc.threshold=0,min.cells.group=0,min.pct=0)
+  
+  de_genes_1h$cell_type <- cell_type
+  de_genes_1h$time <- '1h'
+  de_genes_1h$gene <- rownames(de_genes_1h)
+  de_results_list[[paste0(cell_type,'_1h')]] <- de_genes_1h
+  
+  de_genes_6h <- FindMarkers(subset_seu,
+                             ident.1 = "IFN_6h",
+                             ident.2 = "Control_6h",
+                             features = hla_genes,
+                             test.use = "MAST",
+                             logfc.threshold=0,min.cells.group=0,min.pct=0)
+  
+  de_genes_6h$cell_type <- cell_type
+  de_genes_6h$time <- '6h'
+  de_genes_6h$gene <- rownames(de_genes_6h)
+  de_results_list[[paste0(cell_type,'_6h')]] <- de_genes_6h
+  
+  de_genes_ctrl <- FindMarkers(subset_seu,
+                             ident.1 = "Control_1h",
+                             ident.2 = "Control_6h",
+                             features = hla_genes,
+                             test.use = "MAST",
+                             logfc.threshold=0,min.cells.group=0,min.pct=0)
+  
+
+}
+
+combined_de_results <- bind_rows(de_results_list)
+rownames(combined_de_results) <- NULL
+
+p1 <- ggplot(filter(combined_de_results,time=='1h'), aes(x = gene, y = cell_type, fill = avg_log2FC)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", mid = "lightgray", high = "red", midpoint = 0) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "HLA Gene", y = "Cell Type", fill = "Log2FC\n(STIM vs CTRL)",
+       title = "Differential Expression of HLA Genes after IFN-G Stimulation (1h)")
+
+
+p2 <- ggplot(filter(combined_de_results,time=='6h'), aes(x = gene, y = cell_type, fill = avg_log2FC)) +
+  geom_tile() +
+  scale_fill_gradient2(low = "blue", mid = "lightgray", high = "red", midpoint = 0) +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1)) +
+  labs(x = "HLA Gene", y = "Cell Type", fill = "Log2FC\n(STIM vs CTRL)",
+       title = "Differential Expression of HLA Genes after IFN-G Stimulation (6h)")
+
+
+p1 / p2
+```
+
+<img src="README_files/figure-gfm/unnamed-chunk-24-1.png" width="100%" />
+
+Now we can see the effect of IFN-G more clearly. After 1 hour
+stimulation, class-II genes are mainly upregulated but class-I genes
+remains similar to control group. This effect is even more pronounced
+after 6h stimulation.
+
+The dataset contains other stimulants so we can repeat the same analysis
+for them to see their effect on HLA expression. Maybe later…

@@ -4,8 +4,6 @@ author: "Onur Özer"
 date: "2025-09-08"
 output: 
   github_document: default
-  html_document: default
-  pdf_document: default
 ---
 
 ```{r setup, include=FALSE}
